@@ -16,7 +16,7 @@ class AdminCog(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def reload_all_cogs(self, ctx: Context):
+    async def reload_cogs(self, ctx: Context):
         cogs = list(self.bot.extensions.keys())
         async with ctx.typing():
             loaded: list[str] = []
@@ -27,7 +27,7 @@ class AdminCog(commands.Cog):
                     await ctx.send(f"Error reloading {cog}")
                     return
                 loaded.append(cog)
-        embed = discord.Embed(title=f'Cogs reloaded: \n {"#".join(loaded)}'.replace("#", "\n").replace("cogs.", "- "))
+        embed = discord.Embed(title=f'Cogs reloaded: \n{"#".join(loaded)}'.replace("#", "\n").replace("cogs.", "- "))
         await ctx.send(embed=embed)
 
     @commands.command()
@@ -45,6 +45,27 @@ class AdminCog(commands.Cog):
                 await ctx.send(f"Error reloading {cog_name}")
                 return
         embed = discord.Embed(title=f'Cogs reloaded: \n-{cog_name}')
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def cogs(self, ctx: Context):
+        cogs = list(self.bot.extensions.keys())
+        embed = discord.Embed(
+            title=f'Cogs reloaded: \n{"#".join(cogs)}'.replace("#", "\n").replace("cogs.", "- "))
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def load_cog(self, ctx: Context, cog_name: str):
+        resolved_cog_name = f"cogs.{cog_name}"
+        async with ctx.typing():
+            try:
+                await self.bot.load_extension(resolved_cog_name)
+            except ExtensionError:
+                await ctx.send(f"Error loading cog `{cog_name}`")
+                return
+        embed = discord.Embed(title=f'Cog loaded: \n-{cog_name}')
         await ctx.send(embed=embed)
 
 

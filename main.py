@@ -3,7 +3,7 @@ import json
 import logging
 
 import discord
-from discord.ext.commands import Bot
+from discord.ext.commands import Bot, when_mentioned_or
 
 import os
 from dotenv import load_dotenv
@@ -21,6 +21,7 @@ f = open("settings.json")
 
 settings = json.load(f)
 prefix = settings["prefix"]
+reply_when_mentioned = settings["reply_when_mentioned"]
 log_level = settings["log_level"]
 f.close()
 
@@ -30,7 +31,7 @@ intents.members = True
 intents.presences = True
 
 discord.utils.setup_logging(level=log_level)
-bot = Bot(command_prefix=prefix, intents=intents)
+bot = Bot(command_prefix=when_mentioned_or(prefix) if reply_when_mentioned else prefix, intents=intents)
 
 
 @bot.event

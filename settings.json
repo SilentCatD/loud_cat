@@ -1,4 +1,6 @@
 {
   "prefix": "!",
-  "log_level": 20
+  "reply_when_mentioned": true,
+  "log_level": 20,
+  "redmine_url": "https://rm.unicloud.com.vn/"
 }
