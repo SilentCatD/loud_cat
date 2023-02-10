@@ -8,6 +8,8 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True
+intents.presences = True
 
 client = discord.Client(intents=intents)
 
