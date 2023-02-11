@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import typing
 
 import discord
 from discord import ui
@@ -33,19 +34,8 @@ class ProjectsSources(menus.ListPageSource):
         return embed
 
 
-class RegisterRedmineUserIdModal(ui.Modal, title="Redmine user id register"):
-    user_id = ui.TextInput(label="Redmine user id")
-
-    async def on_submit(self, interaction: discord.Interaction) -> None:
-        await interaction.response.send_message(f"Your user id is {self.user_id}", ephemeral=True)
-
-
-class RegisterRedmineUserIdButton(ui.View):
-    @ui.button(label="set user_id")
-    async def register_user_id(self, interaction: discord.Interaction, button: ui.Button):
-        button.disabled = True
-        await interaction.message.edit(view=self)
-        await interaction.response.send_modal(RegisterRedmineUserIdModal())
+class RedmineCommandFlags(commands.FlagConverter, prefix="-", delimiter=" "):
+    create: typing.Optional[int]
 
 
 class RedmineCog(commands.Cog):
@@ -56,16 +46,40 @@ class RedmineCog(commands.Cog):
         redmine_url = settings["redmine_url"]
         f.close()
         redmine_api_key = os.getenv("REDMINE_API_KEY")
-        self.repository = RedmineRepository(url=redmine_url, api_key=redmine_api_key)
+        mongo_username = os.getenv("MONGO_USERNAME")
+        mongo_password = os.getenv("MONGO_PASSWORD")
+        mongo_cluster = os.getenv("MONGO_CLUSTER_ADDRESS")
+        self.repository = RedmineRepository(url=redmine_url, api_key=redmine_api_key, mongo_username=mongo_username,
+                                            mongo_password=mongo_password, mongo_cluster_address=mongo_cluster)
 
     @commands.Cog.listener()
     async def on_ready(self):
         logging.log(msg=f"{self.__class__.__name__} loaded!", level=logging.INFO)
 
     @commands.command()
-    async def redmine(self, ctx: Context):
-        await ctx.send("Press the button to set `Redmine` user id",
-                       view=RegisterRedmineUserIdButton(), ephemeral=True)
+    async def redmine(self, ctx: Context, user: typing.Optional[typing.Union[discord.Member, int]], *,
+                      flags: RedmineCommandFlags):
+        async with ctx.typing():
+            if user is not None:
+                discord_user = user
+            else:
+                discord_user = ctx.author
+            if flags.create is None:
+                user_id = await self.repository.get_user_id(discord_id=discord_user.id)
+
+                if user_id is None:
+                    if user is not None:
+                        await ctx.send(
+                            "This user haven't register a `redmine id` yet, use `redmine -create <id>` to create "
+                            "one")
+                    else:
+                        await ctx.send(
+                            "You haven't register a `redmine id` yet, use `redmine -create <id>` to create one")
+                else:
+                    await ctx.send(f"{discord_user.mention} has {user_id}")
+            else:
+                await self.repository.save_user_id(user_id=flags.create, discord_id=discord_user.id)
+                await ctx.send(f"Successfully register {discord_user.mention} with `redmine id`: {flags.create}")
 
     @commands.command()
     async def projects(self, ctx: Context, limit: int = 25, offset: Optional[int] = None):
