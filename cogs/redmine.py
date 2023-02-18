@@ -7,6 +7,7 @@ from discord.ext.commands import Context
 from services.redmine.models.project import Project, ProjectList
 from services.redmine.redmine_repository import RedmineRepository
 from configs import bot_config
+from typing import Literal, Optional
 
 
 class ProjectsSources(menus.ListPageSource):
@@ -33,7 +34,16 @@ class ProjectsSources(menus.ListPageSource):
 class RedmineProjectsFlags(commands.FlagConverter, prefix="-", delimiter=" "):
     offset: int = commands.flag(name="offset", aliases=["o"], default=0)
     limit: int = commands.flag(name="limit", aliases=["l"], default=25)
-    per_page: int = commands.flag(name="per_page", aliases=["pp"], default=4)
+    per_page: int = commands.flag(name="per_page", default=4)
+
+
+class RedmineIssuesFlags(commands.FlagConverter, prefix="-", delimiter=""):
+    offset: int = commands.flag(name="offset", aliases=["o"], default=0)
+    limit: int = commands.flag(name="limit", aliases=["l"], default=25)
+    per_page: int = commands.flag(name="per_page", default=4)
+    project: Optional[int] = commands.flag(name="project", aliases=["p"], default=None)
+    status: Literal["open", "closed", "*"] = commands.flag(name="status", aliases=["s"], default="*")
+    user: Optional[int] = commands.flag(name="user", aliases=["u"], default=None)
 
 
 class RedmineCog(commands.Cog):
@@ -56,6 +66,10 @@ class RedmineCog(commands.Cog):
             pages = menus.MenuPages(source=ProjectsSources(projects, per_page=flags.per_page),
                                     clear_reactions_after=True)
             await pages.start(ctx)
+
+    @commands.command()
+    async def issues(self, ctx: Context, *, flags: RedmineIssuesFlags):
+        pass
 
 
 async def setup(bot: commands.Bot):
