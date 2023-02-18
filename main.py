@@ -1,56 +1,44 @@
 import asyncio
-import json
 import logging
-
+import os
+from typing import Any
+from configs import bot_config
 import discord
 from discord.ext.commands import Bot, when_mentioned_or
 
-import os
-from dotenv import load_dotenv
 
-# CRITICAL = 50
-# ERROR = 40
-# WARNING = 30
-# INFO = 20
-# DEBUG = 10
-# NOTSET = 0
+class NoisyCat(Bot):
 
-load_dotenv()
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-f = open("settings.json")
+    def __init__(self, **options: Any):
 
-settings = json.load(f)
-prefix = settings["prefix"]
-reply_when_mentioned = settings["reply_when_mentioned"]
-log_level = settings["log_level"]
-f.close()
+        intents = discord.Intents.default()
+        intents.message_content = True
+        intents.members = True
+        intents.presences = True
 
-intents = discord.Intents.default()
-intents.message_content = True
-intents.members = True
-intents.presences = True
+        prefix = bot_config.prefix
+        command_prefix = when_mentioned_or(
+            prefix) if bot_config.reply_when_mentioned else prefix
+        super().__init__(command_prefix, intents=intents, **options)
 
-discord.utils.setup_logging(level=log_level)
-bot = Bot(command_prefix=when_mentioned_or(prefix) if reply_when_mentioned else prefix, intents=intents)
+    async def on_ready(self):
+        logging.log(
+            msg=f"{self.user} is ready!",
+            level=logging.INFO)
+
+    async def load_cogs(self):
+        for file in os.listdir('./cogs'):
+            if file.endswith('.py'):
+                await self.load_extension(f"cogs.{file[:-3]}")
 
 
-@bot.event
-async def on_ready():
-    logging.log(
-        msg=f"{bot.user} is ready! "
-            f"Settings: {settings}",
-        level=logging.INFO)
+async def run_bot():
+    bot_token = bot_config.bot_token
+    discord.utils.setup_logging(level=bot_config.log_level)
+    bot = NoisyCat()
+    await bot.load_cogs()
+    await bot.start(bot_token)
 
 
-async def load_cogs():
-    for file in os.listdir('./cogs'):
-        if file.endswith('.py'):
-            await bot.load_extension(f"cogs.{file[:-3]}")
-
-
-async def main():
-    await load_cogs()
-    await bot.start(BOT_TOKEN)
-
-
-asyncio.run(main())
+if __name__ == '__main__':
+    asyncio.run(run_bot())

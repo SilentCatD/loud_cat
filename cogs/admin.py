@@ -15,7 +15,6 @@ class AdminCog(commands.Cog):
         logging.log(msg=f"{self.__class__.__name__} loaded!", level=logging.INFO)
 
     @commands.command()
-    @commands.has_permissions(administrator=True)
     async def reload_cogs(self, ctx: Context):
         cogs = list(self.bot.extensions.keys())
         async with ctx.typing():
@@ -31,7 +30,6 @@ class AdminCog(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    @commands.has_permissions(administrator=True)
     async def reload_cog(self, ctx: Context, cog_name: str):
         cogs = self.bot.extensions.keys()
         resolved_cog_name = f"cogs.{cog_name}"
@@ -48,7 +46,6 @@ class AdminCog(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    @commands.has_permissions(administrator=True)
     async def cogs(self, ctx: Context):
         cogs = list(self.bot.extensions.keys())
         embed = discord.Embed(
@@ -56,7 +53,6 @@ class AdminCog(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    @commands.has_permissions(administrator=True)
     async def load_cog(self, ctx: Context, cog_name: str):
         resolved_cog_name = f"cogs.{cog_name}"
         async with ctx.typing():
@@ -67,6 +63,14 @@ class AdminCog(commands.Cog):
                 return
         embed = discord.Embed(title=f'Cog loaded: \n-{cog_name}')
         await ctx.send(embed=embed)
+
+    @commands.command()
+    async def sync(self, ctx: Context):
+        sync = await ctx.bot.tree.sync()
+        await ctx.send(f"Synced {len(sync)} commands.")
+
+    async def cog_check(self, ctx: Context) -> bool:
+        pass
 
 
 async def setup(bot: commands.Bot):
